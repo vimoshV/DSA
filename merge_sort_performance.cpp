@@ -42,6 +42,18 @@ void recursiveMergeSort(std::vector<int>& arr, int left, int right) {
     }
 }
 
+// Non-recursive merge sort function
+void nonRecursiveMergeSort(std::vector<int>& arr, int left, int right) {
+    int n = arr.size();
+    for (int currSize = 1; currSize <= n - 1; currSize = 2 * currSize) {
+        for (int leftStart = 0; leftStart < n - 1; leftStart += 2 * currSize) {
+            int mid = std::min(leftStart + currSize - 1, n - 1);
+            int rightEnd = std::min(leftStart + 2 * currSize - 1, n - 1);
+            merge(arr, leftStart, mid, rightEnd);
+        }
+    }
+}
+
 // Measure time taken by merge sort
 double measureTime(void (*sortFunction)(std::vector<int>&, int, int), std::vector<int>& arr, int left, int right) {
     clock_t start, end;
@@ -58,7 +70,8 @@ double measureTime(void (*sortFunction)(std::vector<int>&, int, int), std::vecto
 
 int main() {
     std::vector<int> inputSizes = {100, 500, 1000, 1500, 2000};
-    std::vector<double> timingResults(inputSizes.size()); // Timing results
+    std::vector<double> recursiveTiming(inputSizes.size()); // Timing results for recursive merge sort
+    std::vector<double> nonRecursiveTiming(inputSizes.size()); // Timing results for non-recursive merge sort
 
     // Perform sorting and measure time for each input size
     for (size_t i = 0; i < inputSizes.size(); ++i) {
@@ -71,14 +84,17 @@ int main() {
         }
 
         // Measure time taken by recursive merge sort
-        timingResults[i] = measureTime(recursiveMergeSort, dataset, 0, size - 1);
+        recursiveTiming[i] = measureTime(recursiveMergeSort, dataset, 0, size - 1);
+
+        // Measure time taken by non-recursive merge sort
+        nonRecursiveTiming[i] = measureTime(nonRecursiveMergeSort, dataset, 0, size - 1);
     }
 
     // Write input sizes and timing results to a file
     std::ofstream outputFile("timing_results.txt");
     if (outputFile.is_open()) {
         for (size_t i = 0; i < inputSizes.size(); ++i) {
-            outputFile << inputSizes[i] << " " << timingResults[i] << std::endl;
+            outputFile << inputSizes[i] << " " << recursiveTiming[i] << " " << nonRecursiveTiming[i] << std::endl;
         }
         outputFile.close();
     } else {
@@ -93,7 +109,8 @@ int main() {
         fprintf(gnuplotPipe, "set xlabel 'Number of Elements in Array'\n");
         fprintf(gnuplotPipe, "set ylabel 'Time (seconds)'\n");
         fprintf(gnuplotPipe, "set grid\n");
-        fprintf(gnuplotPipe, "plot 'timing_results.txt' with linespoints title 'Recursive Merge Sort' linecolor 'orange'\n");
+        fprintf(gnuplotPipe, "plot 'timing_results.txt' using 1:2 with linespoints title 'Recursive Merge Sort' linecolor 'orange', \
+            'timing_results.txt' using 1:3 with linespoints title 'Non-Recursive Merge Sort' linecolor 'blue'\n");
         fflush(gnuplotPipe);
         fclose(gnuplotPipe);
     } else {
