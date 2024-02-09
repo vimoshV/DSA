@@ -2,7 +2,7 @@
 #include <vector>
 #include <ctime>
 #include <cstdlib>
-#include <fstream>
+#include <algorithm>
 
 // Merge function for merge sort
 void merge(std::vector<int>& arr, int l, int m, int r) {
@@ -42,14 +42,13 @@ void recursiveMergeSort(std::vector<int>& arr, int left, int right) {
     }
 }
 
-// Non-recursive merge sort function
-void nonRecursiveMergeSort(std::vector<int>& arr, int left, int right) {
-    int n = arr.size();
-    for (int currSize = 1; currSize <= n - 1; currSize = 2 * currSize) {
-        for (int leftStart = 0; leftStart < n - 1; leftStart += 2 * currSize) {
-            int mid = std::min(leftStart + currSize - 1, n - 1);
-            int rightEnd = std::min(leftStart + 2 * currSize - 1, n - 1);
-            merge(arr, leftStart, mid, rightEnd);
+// Iterative merge sort function
+void iterativeMergeSort(std::vector<int>& arr, int left, int right) {
+    for (int currSize = 1; currSize <= right - left; currSize *= 2) {
+        for (int start = left; start < right; start += 2 * currSize) {
+            int mid = std::min(start + currSize - 1, right);
+            int end = std::min(start + 2 * currSize - 1, right);
+            merge(arr, start, mid, end);
         }
     }
 }
@@ -69,54 +68,49 @@ double measureTime(void (*sortFunction)(std::vector<int>&, int, int), std::vecto
 }
 
 int main() {
-    std::vector<int> inputSizes = {100, 500, 1000, 1500, 2000};
-    std::vector<double> recursiveTiming(inputSizes.size()); // Timing results for recursive merge sort
-    std::vector<double> nonRecursiveTiming(inputSizes.size()); // Timing results for non-recursive merge sort
+    std::vector<int> inputSizes = {200, 700, 1500, 2000, 3000};
+    std::vector<double> recursiveExecutionTimes;
+    std::vector<double> iterativeExecutionTimes;
 
-    // Perform sorting and measure time for each input size
-    for (size_t i = 0; i < inputSizes.size(); ++i) {
-        int size = inputSizes[i];
+    for (int size : inputSizes) {
+        // Generate a dataset of random integers for the current input size
         std::vector<int> dataset(size);
-
-        // Generate random dataset
-        for (int j = 0; j < size; ++j) {
-            dataset[j] = rand() % 10000; // Random integers between 0 and 9999
+        for (int i = 0; i < size; ++i) {
+            dataset[i] = rand() % 10000; // Random integers between 0 and 9999
         }
+
+        // Make copies of the dataset for both sorting algorithms
+        std::vector<int> datasetCopy(dataset);
 
         // Measure time taken by recursive merge sort
-        recursiveTiming[i] = measureTime(recursiveMergeSort, dataset, 0, size - 1);
+        double recursiveTime = measureTime(recursiveMergeSort, dataset, 0, size - 1);
+        recursiveExecutionTimes.push_back(recursiveTime);
 
         // Measure time taken by non-recursive merge sort
-        nonRecursiveTiming[i] = measureTime(nonRecursiveMergeSort, dataset, 0, size - 1);
+        double iterativeTime = measureTime(iterativeMergeSort, datasetCopy, 0, size - 1);
+        iterativeExecutionTimes.push_back(iterativeTime);
     }
 
-    // Write input sizes and timing results to a file
-    std::ofstream outputFile("timing_results.txt");
-    if (outputFile.is_open()) {
-        for (size_t i = 0; i < inputSizes.size(); ++i) {
-            outputFile << inputSizes[i] << " " << recursiveTiming[i] << " " << nonRecursiveTiming[i] << std::endl;
+    // Print execution times
+    std::cout << "Recursive Merge Sort Time:" << std::endl;
+    std::cout << "[" ;
+    for (size_t i = 0; i < recursiveExecutionTimes.size(); ++i) {
+        std::cout << recursiveExecutionTimes[i];
+        if (i < recursiveExecutionTimes.size() - 1) {
+            std::cout << ", ";
         }
-        outputFile.close();
-    } else {
-        std::cerr << "Unable to open file for writing" << std::endl;
-        return 1;
     }
+    std::cout << "]" << std::endl << std::endl;
 
-    // Plotting using gnuplot
-    FILE *gnuplotPipe = popen("gnuplot -persistent", "w");
-    if (gnuplotPipe) {
-        fprintf(gnuplotPipe, "set title 'Merge Sort Performance'\n");
-        fprintf(gnuplotPipe, "set xlabel 'Number of Elements in Array'\n");
-        fprintf(gnuplotPipe, "set ylabel 'Time (seconds)'\n");
-        fprintf(gnuplotPipe, "set grid\n");
-        fprintf(gnuplotPipe, "plot 'timing_results.txt' using 1:2 with linespoints title 'Recursive Merge Sort' linecolor 'orange', \
-            'timing_results.txt' using 1:3 with linespoints title 'Non-Recursive Merge Sort' linecolor 'blue'\n");
-        fflush(gnuplotPipe);
-        fclose(gnuplotPipe);
-    } else {
-        std::cerr << "Error opening gnuplot pipe" << std::endl;
-        return 1;
+    std::cout << "Iterative Merge Sort Time:" << std::endl;
+    std::cout << "[" ;
+    for (size_t i = 0; i < iterativeExecutionTimes.size(); ++i) {
+        std::cout << iterativeExecutionTimes[i];
+        if (i < iterativeExecutionTimes.size() - 1) {
+            std::cout << ", ";
+        }
     }
+    std::cout << "]" << std::endl;
 
     return 0;
 }
